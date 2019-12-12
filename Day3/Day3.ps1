@@ -1,18 +1,21 @@
 function Get-LineCoordinates {
     param (
         $currentCoord,
+        $currentCount,
         $move
     )
 
     $lineCoord = New-Object -TypeName psobject -Property @{
         'start' = $currentCoord
         'end' = $null
+        'count' = $currentCount
     }
 
     $newX = $currentCoord.X
     $newY = $currentCoord.Y
 
     $moveSpaces = [convert]::ToInt32($move.Substring(1,$move.Length-1),10)
+    $lineCoord.count += $moveSpaces
 
     switch ($move[0]) {
         'R' {$newX += $moveSpaces}
@@ -41,7 +44,7 @@ function Get-AllLines {
     $lines = @()
 
     foreach($move in $wireMoves) {
-        $WireOneCoords = Get-LineCoordinates -currentCoord $current -move $move
+        $WireOneCoords = Get-LineCoordinates -currentCoord $current -move $move -currentCount $WireOneCoords.Count
         $current = $WireOneCoords.end
         $lines += $WireOneCoords
     }
@@ -93,6 +96,8 @@ function get-intersect {
                 New-Object -TypeName psobject -Property @{
                     'x' = $x
                     'y' = $y
+                    'lineOnecount' = $lineOne.count - [math]::abs($x - $b.x) - [math]::abs($y - $b.y)
+                    'lineTwocount' = $lineTwo.count - [math]::abs($x - $d.x) - [math]::abs($y - $d.y)
                 }
             }
         }
@@ -114,6 +119,7 @@ function Get-ManhattanDistance {
         }
     }
 }
+#part 1
 
 $wireOne = (get-content .\Day3\Wire1.txt) -split (',')
 $wireTwo = (get-content .\Day3\Wire2.txt) -split (',')
@@ -129,3 +135,25 @@ foreach ($lineOne in $wireOneLines) {
 }
 
 Get-ManhattanDistance -coords $crosses | sort ManhattanDistance | select -first 1
+#227
+
+
+#part 2
+
+
+$wireOne = (get-content .\Day3\Wire1.txt) -split (',')
+$wireTwo = (get-content .\Day3\Wire2.txt) -split (',')
+
+$wireOneLines = Get-AllLines -wireMoves $wireOne
+$wireTwoLines = Get-AllLines -wireMoves $wireTwo
+
+$crosses = @()
+foreach ($lineOne in $wireOneLines) {
+    foreach($linetwo in $wireTwoLines) {
+        $crosses += get-intersect -lineOne $lineOne -lineTwo $lineTwo |
+        select x,y,lineonecount,linetwocount, @{l='TotalDistance';e={($_.linetwocount + $_.lineOnecount)}}
+    }
+}
+
+$crosses | sort TotalDistance | ft
+#20286
